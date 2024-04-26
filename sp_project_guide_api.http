@@ -1,0 +1,9 @@
+@sp_project_guide_api_HostAddress = http://localhost:5128
+
+GET {{sp_project_guide_api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+GET {{sp_project_guide_api_HostAddress}}/weatherforecast/
+Accept: application/json

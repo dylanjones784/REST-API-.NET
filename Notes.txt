@@ -1,0 +1,120 @@
+Notes
+URI Layout
+A
+
+What do we need?
+Entity frameworks
+Controllers, Models
+Services 
+Need to figure out the database connection stuff
+Start with json for now tho
+But also we need to figure out best method for db when we publish the API
+
+realistically data should be sanitised from the frontend
+can we do it here?
+
+API Will need
+Error logging that is meanginful
+_how do we save the logs? or errors?
+
+HTTPS So its secure (How?0)
+
+Access Control. Going to need 
+functionality that exists 
+beyond just gets. Need to have some that
+features some admin control or whatever. Just to show
+
+R&R 
+Request and Responses
+Denying certain methods /data types
+Ensuring responses are mapped to object models
+Custom Methods
+Async,
+HATEOAS 
+URI parameters
+So like filtering,getting book by ID, author name,
+Same with the option for pagination (limiting the results returned, as well as telling them how many 'pages' are left, which is just X amount of content split up)
+
+COuld do some basic versioning in V2
+    [ApiController]
+    [Route("[controller]")]
+    public class BookController : ControllerBase
+    {
+
+
+        private readonly ILogger<BookController> _logger;
+
+        public BookController(ILogger<BookController> logger)
+        {
+             _logger = logger;
+        }
+
+
+
+    }
+
+
+        [HttpGet("books")]
+        [Produces(MediaTypeNames.Application.Json)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<Book> GetBooks() { 
+            //
+            Book books = new Book();
+            books.Title = "Dylan Jones";
+            string jsonString = System.Text.Json.JsonSerializer.Serialize(books);
+            return Ok(jsonString);
+        }
+
+        [HttpGet("books/{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<Book> GetBook()
+        {
+
+            return Ok();
+        }
+
+
+        [HttpPost("books")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<Book> CreateBook(Book book)
+        {
+            try
+            {
+
+            }catch (Exception ex)
+            {
+                _logger.LogError("");
+                return StatusCode(500, "An error has occured whilst creating a new Book: {ex.Message}");
+            }
+
+            return Ok();
+        }
+
+
+        [HttpPut("books/{id}")]
+        public ActionResult<Book> PutBook()
+        {
+            return Ok();
+        }
+
+        [HttpPatch("books")]
+        public ActionResult<Book> PatchBook()
+        {
+            return Ok();
+        }
+
+
+        
+        [HttpDelete("books/{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<Book> DeleteBook(int? id)
+        {
+            return Ok();
+
+
+        }
