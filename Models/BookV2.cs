@@ -1,4 +1,6 @@
-﻿namespace sp_project_guide_api.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace sp_project_guide_api.Models
 {
     public class BookV2
     {
@@ -10,6 +12,8 @@
 
         //new field for V2 is Status.
         public string Status { get; set; }
+
+        [NotMapped]
         public ICollection<Link>? Links { get; set; }
 
     }

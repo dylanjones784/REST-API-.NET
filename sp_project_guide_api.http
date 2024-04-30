@@ -7,3 +7,9 @@ Accept: application/json
 
 GET {{sp_project_guide_api_HostAddress}}/weatherforecast/
 Accept: application/json
+
+
+### 
+
+GET {{sp_project_guide_api_HostAddress}}/getBook/9
+Accept: application/json

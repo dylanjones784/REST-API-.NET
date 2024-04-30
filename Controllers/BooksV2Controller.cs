@@ -10,6 +10,8 @@ using sp_project_guide_api.Models;
 
 namespace sp_project_guide_api.Controllers
 {
+    //controller level auth
+    [Authorize]
     //URI Versioning by explicit mention of API version in resource indicator.
     [Route("api/v2/[controller]")]
     [ApiController]
@@ -19,24 +21,6 @@ namespace sp_project_guide_api.Controllers
         public BooksV2Controller(BookSystemContext context)
         {
             _context = context;
-            PopulateDatabase(_context);
-        }
-
-        private void PopulateDatabase(BookSystemContext dbContext)
-        {
-            // Add dummy data to the database
-            dbContext.BooksV2.Add(new BookV2 { Title = "Alexander", Author = "Jones Alexander", ISBN = "ISBN-232354245234", Id = 9, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "The Catcher in the Rye", Author = "J.D. Salinger", ISBN = "ISBN-1234567890", Id = 10, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "To Kill a Mockingbird", Author = "Harper Lee", ISBN = "ISBN-0987654321", Id = 11, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "1984", Author = "George Orwell", ISBN = "ISBN-9876543210", Id = 12, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "Pride and Prejudice", Author = "Jane Austen", ISBN = "ISBN-2468135790", Id = 13, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "The Great Gatsby", Author = "F. Scott Fitzgerald", ISBN = "ISBN-1357924680", Id = 14, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "Moby Dick", Author = "Herman Melville", ISBN = "ISBN-9876543210", Id = 15, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "War and Peace", Author = "Leo Tolstoy", ISBN = "ISBN-2468135790", Id = 16, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "Hamlet", Author = "William Shakespeare", ISBN = "ISBN-1234567890", Id = 17, Status = "Available" });
-            dbContext.BooksV2.Add(new BookV2 { Title = "The Lord of the Rings", Author = "J.R.R. Tolkien", ISBN = "ISBN-1357924680", Id = 18, Status = "Available" });
-            dbContext.SaveChangesAsync();
-
         }
 
         //Clients can set the max results they want returned from the Get Books.
@@ -88,18 +72,25 @@ namespace sp_project_guide_api.Controllers
 
         //Demonstrating a Custom Method, which creates an Order based off a specific JSON body named Oreq.
         //We dont use a PATCH for a custom method. Separate the Custom verb from the Resource via :
-        [HttpPost("createBookOrder")]
+        [HttpPost(":createBookOrder")]
         public async Task<ActionResult<Order>> CreateBookOrder([FromBody]OrderRequest oreq)
         {
+            //check if object is not null 
             if (oreq != null) {
-                if(oreq.BookId > 0 && oreq.MemberId > 0)
+                //attempt to find the data they want to create the order with
+                var member = await _context.Members.FindAsync(oreq.MemberId);
+                var book = await _context.Books.FindAsync(oreq.BookId);
+                if(book != null && member != null)
                 {
+                    //if both are not null, then we can make an order
                     var order = new Order();
                     //set the values for the new Order
+
                     order.MemberID = oreq.MemberId;
                     order.BookId = oreq.BookId;
                     _context.Orders.Add(order);
                     await _context.SaveChangesAsync();
+                    //return order object with hypermedia links
                     order.Links = new List<Link>
                     {
                         new Link($"/api/Orders/{order.Id}", "self", "GET", 0),
@@ -108,12 +99,10 @@ namespace sp_project_guide_api.Controllers
                         new Link($"/api/Books/{order.MemberID}", "member", "GET",0),
 
                     };
-
                     return Ok(order);
-                }
-
+                }else { return NotFound(); }
             }
-
+            //if it is null, return bad request
             return BadRequest(ModelState);
         }
     }

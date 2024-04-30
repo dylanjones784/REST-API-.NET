@@ -10,6 +10,7 @@ using sp_project_guide_api.Models;
 
 namespace sp_project_guide_api.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class OrdersController : ControllerBase
@@ -21,15 +22,23 @@ namespace sp_project_guide_api.Controllers
             _context = context;
         }
 
-        // GET: api/Orders
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
         {
+            List<Order> lOrders = await _context.Orders.ToListAsync();
+
+            foreach(Order o in lOrders)
+            {
+                o.Links = new List<Link>
+                {
+                    new Link($"/api/Orders/{o.Id}", "self", "GET",0),
+                    new Link($"/api/Orders/{o.Id}", "self", "PUT",1),
+                    new Link($"/api/Orders/{o.Id}", "self", "DELETE",0)
+                };
+            }
             return await _context.Orders.ToListAsync();
         }
 
-        // GET: api/Orders/5
-        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Order>> GetOrder(int id)
         {
@@ -39,13 +48,16 @@ namespace sp_project_guide_api.Controllers
             {
                 return NotFound();
             }
+            order.Links = new List<Link>
+            {
+                    new Link($"/api/Orders/{order.Id}", "self", "PUT",1),
+                    new Link($"/api/Orders/{order.Id}", "self", "DELETE",0),
+            };
 
             return order;
         }
 
-        // PUT: api/Orders/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [Authorize]
+
         [HttpPut("{id}")]
         public async Task<IActionResult> PutOrder(int id, Order order)
         {
@@ -54,28 +66,35 @@ namespace sp_project_guide_api.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(order).State = EntityState.Modified;
-
-            try
+            //check that Member ID and Book ID exist
+            var member = await _context.Members.FindAsync(order.MemberID);
+            var book = await _context.Books.FindAsync(order.BookId);
+            if (book != null && member != null)
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!OrderExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                _context.Entry(order).State = EntityState.Modified;
 
-            return NoContent();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!OrderExists(id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return NoContent();
+
+            }
+            return BadRequest("Your book or member ID does not exist.");
+
         }
 
-        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {

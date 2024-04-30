@@ -11,6 +11,7 @@ using sp_project_guide_api.Models;
 
 namespace sp_project_guide_api.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class MembersController : ControllerBase
@@ -22,15 +23,24 @@ namespace sp_project_guide_api.Controllers
             _context = context;
         }
 
-        // GET: api/Members
-        [Authorize]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Member>>> GetMembers([FromQuery] int? page, [FromQuery] int? pageSize, [FromQuery] string? sort, [FromQuery] string? fields)
+        public async Task<ActionResult<IEnumerable<Member>>> GetMembers()
         {
-            return await _context.Members.ToListAsync();
+            List<Member> lMember = await _context.Members.ToListAsync();
+            foreach (Member member in lMember)
+            {
+                //foreach member add the hypermedia links related to the resource
+                member.Links = new List<Link>
+                {
+                    new Link($"/api/Member/{member.Id}", "self", "GET",0),
+                    new Link($"/api/Member/{member.Id}", "self", "PUT",1),
+                    new Link($"/api/Member/{member.Id}", "self", "DELETE",0)
+                };
+
+            }
+            return lMember;
         }
 
-        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Member>> GetMember(int id)
         {
@@ -48,8 +58,9 @@ namespace sp_project_guide_api.Controllers
 
             return member;
         }
-        [Authorize]
+
         [HttpPut("{id}")]
+        [Consumes("application/json")]
         public async Task<IActionResult> PutMember(int id, Member member)
         {
             if (id != member.Id)
@@ -57,7 +68,18 @@ namespace sp_project_guide_api.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(member).State = EntityState.Modified;
+            var existingMember = await _context.Members.FindAsync(id);
+            if (existingMember == null)
+            {
+                return NotFound();
+            }
+
+            member.Name = SanitiseInput(member.Name);
+            member.Address = SanitiseInput(member.Address);
+
+            //further checks could be done on the datetime properly, i.e converting it with .Try
+
+            _context.Entry(existingMember).CurrentValues.SetValues(member);
 
             try
             {
@@ -78,38 +100,40 @@ namespace sp_project_guide_api.Controllers
             return NoContent();
         }
 
-        // POST: api/Members
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [Authorize]
         [HttpPost]
+        [Consumes("application/json")]
         public async Task<ActionResult<Member>> PostMember(Member member)
         {
             if (member != null)
             {
-                //check the inputs
-                Member newMember = new Member();
-                if (member.DateRegistered.GetType() == typeof(DateTime))
+
+                if (member.DateRegistered.GetType() != typeof(DateTime))
                 {
-                    newMember.DateRegistered = member.DateRegistered;
+                    return BadRequest("Date Registered is not a valid value");
+
                 }
+                //check the inputs
+                Member newMember = new Member
+                {
+                    Name = SanitiseInput(member.Name),
+                    Address = SanitiseInput(member.Address),
+                    DateRegistered = member.DateRegistered, 
+                };
 
-                newMember.Name = SanitiseInput(member.Name);
-                newMember.Address = SanitiseInput(member.Address);
                 //we've checked the data, now we can add it to the database
+                _context.Members.Add(newMember);
+                await _context.SaveChangesAsync();
 
-                //add links to book object after saved for return
-                member.Links = new List<Link>
+                //add links to member object after saved for return
+                newMember.Links = new List<Link>
                 {
                     new Link($"/api/Members/{member.Id}", "self", "GET",0),
                     new Link($"/api/Members/{member.Id}", "self", "PUT",1),
                     new Link($"/api/Members/{member.Id}", "self", "DELETE",1)
                 };
 
-
-                _context.Members.Add(member);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction("GetMember", new { id = member.Id }, member);
+                return CreatedAtAction("GetMember", new { id = newMember.Id }, newMember);
             }
 
             return BadRequest();
@@ -121,7 +145,7 @@ namespace sp_project_guide_api.Controllers
         public static string SanitiseInput(string i)
         {
             //Sanitising our Inputs - We put the string "i" into this function, and we have a set of accepted characters
-            Regex r = new Regex("[^a-zA-Z0-9]");
+            Regex r = new Regex("[^a-zA-Z0-9 ]");
             // Replace any characters not matching the pattern with an empty string
             return r.Replace(i, "");
         }

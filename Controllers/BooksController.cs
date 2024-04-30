@@ -12,9 +12,6 @@ using static System.Reflection.Metadata.BlobBuilder;
 
 namespace sp_project_guide_api.Controllers
 {
-    //For authorisation with JWT, we would also have an API that can create the tokens. That is not what we are doing here.  It would be good to have, and something to definitely keep in mind, but for this project
-    //it is enough to implement the recieval of one and make it up for examples sake, rather than actually create one etc.
-    //User should be able to make a /token claim and attacha  userid, email, customClaim with admin false etc.
     [Route("api/[controller]")]
     [ApiController]
     public class BooksController : ControllerBase
@@ -22,36 +19,12 @@ namespace sp_project_guide_api.Controllers
         private readonly BookSystemContext _context;
         private IConfiguration _config;
 
-        //[FromBody] for objects in the body of the request
-        //[FromRoute] to get variables from the root. Will need this for the other func to filter the queries.
-
         public BooksController(BookSystemContext context, IConfiguration config)
         {
             _context = context;
             _config = config;
-            PopulateDatabase(_context);
         }
 
-        private void PopulateDatabase(BookSystemContext dbContext)
-        {
-            // Add dummy data to the database
-            dbContext.Books.Add(new Book { Title = "Alexander", Author = "Jones Alexander", ISBN = "ISBN-232354245234", Id = 9 });
-            dbContext.Books.Add(new Book { Title = "The Catcher in the Rye", Author = "J.D. Salinger", ISBN = "ISBN-1234567890", Id = 10 });
-            dbContext.Books.Add(new Book { Title = "To Kill a Mockingbird", Author = "Harper Lee", ISBN = "ISBN-0987654321", Id = 11 });
-            dbContext.Books.Add(new Book { Title = "1984", Author = "George Orwell", ISBN = "ISBN-9876543210", Id = 12 });
-            dbContext.Books.Add(new Book { Title = "Pride and Prejudice", Author = "Jane Austen", ISBN = "ISBN-2468135790", Id = 13 });
-            dbContext.Books.Add(new Book { Title = "The Great Gatsby", Author = "F. Scott Fitzgerald", ISBN = "ISBN-1357924680", Id = 14 });
-            dbContext.Books.Add(new Book { Title = "Moby Dick", Author = "Herman Melville", ISBN = "ISBN-9876543210", Id = 15 });
-            dbContext.Books.Add(new Book { Title = "War and Peace", Author = "Leo Tolstoy", ISBN = "ISBN-2468135790", Id = 16 });
-            dbContext.Books.Add(new Book { Title = "Hamlet", Author = "William Shakespeare", ISBN = "ISBN-1234567890", Id = 17 });
-            dbContext.Books.Add(new Book { Title = "The Lord of the Rings", Author = "J.R.R. Tolkien", ISBN = "ISBN-1357924680", Id = 18 });
-
-            
-            dbContext.SaveChangesAsync();
-
-        }
-
-        // GET: api/Books
         [HttpGet]
         public async Task<ActionResult<DTOBook>> GetBooks([FromQuery] int? page, [FromQuery] int? pageSize, [FromQuery] string? sort)
         {
@@ -88,7 +61,6 @@ namespace sp_project_guide_api.Controllers
                 
             }
 
-
             //check sort if page is not set
             if (!string.IsNullOrEmpty(sort))
             {
@@ -111,9 +83,7 @@ namespace sp_project_guide_api.Controllers
             return dtoBook;
         }
 
-        // GET: api/Books/5
         [HttpGet("{id}")]
-
         public async Task<ActionResult<Book>> GetBook(int id)
         {
             var book = await _context.Books.FindAsync(id);
@@ -127,13 +97,13 @@ namespace sp_project_guide_api.Controllers
                 {
                     new Link($"/api/Books/{book.Id}", "self", "PUT",1),
                     new Link($"/api/Books/{book.Id}", "self", "DELETE",0),
-                };
+            };
 
             return book;
         }
 
-        // PUT: api/Books/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutBook(int id, Book book)
         {
@@ -141,20 +111,27 @@ namespace sp_project_guide_api.Controllers
             {
                 return BadRequest();
             }
+            //return not found if the Book ID doesnt exist in the context
+            var existingBook = await _context.Books.FindAsync(id);
+            if (existingBook == null)
+            {
+                return NotFound();
+            }
+
+            if (book.PubDate.GetType() != typeof(DateTime))
+            {
+                //return bad request if
+                return BadRequest("Publish Date is not a valid value");
+            }
+            //sanitise the inputs, stripping any escape characters
+            book.Title = SanitiseInput(book.Title);
+            book.Author = SanitiseInput(book.Author);
+            book.ISBN = SanitiseInput(book.ISBN);
+            _context.Entry(existingBook).CurrentValues.SetValues(book);
+            //_context.Books.Update(book);
 
             try
             {
-                //check the inputs on the book.
-                Book newBook = new Book();
-                if (book.PubDate.GetType() == typeof(DateTime))
-                {
-                    newBook.PubDate = book.PubDate;
-                }
-                //sanitise the inputs, stripping any escape characters
-                newBook.Title = SanitiseInput(book.Title);
-                newBook.Author = SanitiseInput(book.Author);
-                newBook.ISBN = SanitiseInput(book.ISBN);
-
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
@@ -168,56 +145,62 @@ namespace sp_project_guide_api.Controllers
                     throw;
                 }
             }
-
             return NoContent();
         }
 
-
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<Book>> PostBook([FromBody]Book book)
         {
-            //Check Book Contents BEFORE we add book straight to db.
-            //we wanna check that the book Details are actually valid,
             if (book != null)
             {
-                //check the inputs
-                Book newBook = new Book();
-                if(book.PubDate.GetType() == typeof(DateTime))
+                if (_context.Books.Any(b => b.Id == book.Id))
                 {
-                    newBook.PubDate = book.PubDate;
+                    return Conflict("A book with the same ID already exists.");
                 }
 
-                newBook.Title = SanitiseInput(book.Title);
-                newBook.Author = SanitiseInput(book.Author);
-                newBook.ISBN = SanitiseInput(book.ISBN);
+                //check the inputs
+                Book newBook = new Book();
+                if(book.PubDate.GetType() != typeof(DateTime))
+                {
+                    return BadRequest("Publish Date is not a valid value");
+                }
+
+                // clean entry and make new book for entry
+                Book nBook = new Book
+                {
+                    PubDate = book.PubDate,
+                    Title = SanitiseInput(book.Title),
+                    Author = SanitiseInput(book.Author),
+                    ISBN = SanitiseInput(book.ISBN)
+                };
+
                 //we've checked the data, now we can add it to the database
 
-                _context.Books.Add(newBook);
+                _context.Books.Add(nBook);
                 await _context.SaveChangesAsync();
                 //add links to book object after saved for return
-                book.Links = new List<Link>
+                nBook.Links = new List<Link>
                 {
                     new Link($"/api/Books/{book.Id}", "self", "GET",0),
                     new Link($"/api/Books/{book.Id}", "self", "PUT",1),
                     new Link($"/api/Books/{book.Id}", "self", "DELETE",0)
                 };
 
-                return CreatedAtAction("GetBook", new { id = book.Id }, book);
+                return CreatedAtAction("GetBook", new { id = nBook.Id }, nBook);
             }
-
             return BadRequest();
 
         }
 
-        public static string SanitiseInput(string i)
+        private static string SanitiseInput(string i)
         {
-            //Sanitising our Inputs - We put the string "i" into this function, and we have a set of accepted characters
-            Regex r = new Regex("[^a-zA-Z0-9]");
-            // Replace any characters not matching the pattern with an empty string
+            //regex pattern to catch any letters not any alphanumeric value or a space
+            Regex r = new Regex("[^a-zA-Z0-9 ]");
+            //replace the value if found.
             return r.Replace(i, "");
         }
 
-        // DELETE: api/Books/5
         [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBook(int id)
@@ -227,6 +210,7 @@ namespace sp_project_guide_api.Controllers
             {
                 return NotFound();
             }
+
 
             _context.Books.Remove(book);
             await _context.SaveChangesAsync();

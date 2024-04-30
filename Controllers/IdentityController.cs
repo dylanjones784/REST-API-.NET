@@ -20,7 +20,6 @@ namespace sp_project_guide_api.Controllers
         [HttpGet("token")]
         public IActionResult GenerateToken([FromBody]RequestCustomClaim rqc)
         {
-
             //validate the RQC value. 
             if (rqc != null)
             {
@@ -32,10 +31,9 @@ namespace sp_project_guide_api.Controllers
                     //In real scenarios, youd probably have a list of accepted values / stored
                     //somewhere securely that can be accessed, and that data would be used to verify
 
-
                     var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
                     var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-                    //for r
+                    //for ease of access, the Issuer is used for both. it made testing easier for some reason.
                     var Sectoken = new JwtSecurityToken(_config["Jwt:Issuer"],
                       _config["Jwt:Issuer"],
                       null,

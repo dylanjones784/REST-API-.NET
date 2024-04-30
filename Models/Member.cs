@@ -1,15 +1,18 @@
-﻿namespace sp_project_guide_api.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace sp_project_guide_api.Models
 {
     public class Member
     {
-        //Name, Address, Sign up date
-        //Getters and setters? 
-
         public int Id { get; set; }
         public string Name { get; set; }
         public string Address { get; set; }
         public DateTime DateRegistered { get; set; }
 
+        [NotMapped]
         public ICollection<Link>? Links { get; set; }
+
+        public Member() { }
     }
+   
 }

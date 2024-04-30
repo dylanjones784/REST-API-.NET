@@ -32,6 +32,9 @@ namespace sp_project_guide_api.Models
                 case 3:
                     Type = "PLAINTEXT";
                     break;
+                case 4:
+                    Type = "Custom Security Claim";
+                    break;
                 default:
                     Type = "None";
                     break;
