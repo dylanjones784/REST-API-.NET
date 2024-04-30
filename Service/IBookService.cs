@@ -5,15 +5,11 @@ namespace sp_project_guide_api.Service
 {
     public interface IBookService
     {
-        public Task<ActionResult<DTOBook>> GetBooks();
-
-        public Task<ActionResult<Book>> GetBook(int id);
-        public Task<IActionResult> PutBook(int id, Book book);
-
-        public Task<ActionResult<Book>> PostBook([FromBody] Book book);
-
-        public Task<IActionResult> DeleteBook(int id);
-
+        Task<Book> GetBook(int id);
+        Task<ActionResult<DTOBook>> GetBooks(int? page, int? pageSize, string? sort);
+        Task<Book> PostBook(Book book);
+        Task UpdateBook(int id, Book book);
+        Task DeleteBook(int id);
 
     }
 }

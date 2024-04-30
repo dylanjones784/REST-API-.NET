@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using AspNetCoreRateLimit;
+using sp_project_guide_api.Service;
 
 
 
@@ -54,6 +55,7 @@ builder.Services.Configure<IpRateLimitOptions>(options =>
         }
     };
 });
+builder.Services.AddScoped<IBookService, BookService>();  // You can use AddTransient or AddSingleton based on your needs
 
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
