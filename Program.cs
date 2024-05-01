@@ -55,7 +55,11 @@ builder.Services.Configure<IpRateLimitOptions>(options =>
         }
     };
 });
-builder.Services.AddScoped<IBookService, BookService>();  // You can use AddTransient or AddSingleton based on your needs
+
+//Adding services to the build
+builder.Services.AddScoped<IBookService, BookService>();  
+builder.Services.AddScoped<IMemberService, MemberService>(); 
+builder.Services.AddScoped<IOrderService, OrderService>(); 
 
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sp_project_guide_api.Models;
+using sp_project_guide_api.Service;
 
 namespace sp_project_guide_api.Controllers
 {
@@ -16,45 +17,37 @@ namespace sp_project_guide_api.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly BookSystemContext _context;
+        private readonly IOrderService _orderService;
 
-        public OrdersController(BookSystemContext context)
+
+        public OrdersController(BookSystemContext context, IOrderService orderService)
         {
             _context = context;
+            _orderService = orderService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
         {
-            List<Order> lOrders = await _context.Orders.ToListAsync();
-
-            foreach(Order o in lOrders)
+            var orders = await _orderService.GetOrders();
+            if(orders == null)
             {
-                o.Links = new List<Link>
-                {
-                    new Link($"/api/Orders/{o.Id}", "self", "GET",0),
-                    new Link($"/api/Orders/{o.Id}", "self", "PUT",1),
-                    new Link($"/api/Orders/{o.Id}", "self", "DELETE",0)
-                };
+                return NotFound();
             }
-            return await _context.Orders.ToListAsync();
+            return Ok(orders);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Order>> GetOrder(int id)
         {
-            var order = await _context.Orders.FindAsync(id);
-
-            if (order == null)
+            var order = await _orderService.GetOrder(id);
+            if(order == null)
             {
                 return NotFound();
             }
-            order.Links = new List<Link>
-            {
-                    new Link($"/api/Orders/{order.Id}", "self", "PUT",1),
-                    new Link($"/api/Orders/{order.Id}", "self", "DELETE",0),
-            };
+           
 
-            return order;
+            return Ok(order);
         }
 
 
@@ -66,53 +59,44 @@ namespace sp_project_guide_api.Controllers
                 return BadRequest();
             }
 
-            //check that Member ID and Book ID exist
-            var member = await _context.Members.FindAsync(order.MemberID);
-            var book = await _context.Books.FindAsync(order.BookId);
-            if (book != null && member != null)
+            try
             {
-                _context.Entry(order).State = EntityState.Modified;
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!OrderExists(id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                await _orderService.UpdateOrder(id, order);
                 return NoContent();
-
             }
-            return BadRequest("Your book or member ID does not exist.");
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message); 
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message); 
+            }
 
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null)
+            try
             {
-                return NotFound();
+                await _orderService.DeleteOrder(id);
+                return NoContent();
             }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
 
-            _context.Orders.Remove(order);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            }
         }
 
-        private bool OrderExists(int id)
-        {
-            return _context.Orders.Any(e => e.Id == id);
-        }
     }
 }

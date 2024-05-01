@@ -93,6 +93,7 @@ namespace sp_project_guide_api.Service
 
             if (_context.Books.Any(b => b.Id == book.Id))
             {
+                //throw exception to tell user ID already exist.
                 throw new KeyNotFoundException($"Book already exists with ID of{book.Id}");
             }
 
@@ -141,7 +142,6 @@ namespace sp_project_guide_api.Service
             book.ISBN = SanitiseInput(book.ISBN);
 
             _context.Entry(existingBook).CurrentValues.SetValues(book);
-            //_context.Books.Update(book);
 
             try
             {
@@ -151,7 +151,7 @@ namespace sp_project_guide_api.Service
             {
                 if (!BookExists(id))
                 {
-                    throw new KeyNotFoundException($"Book ID does not exist with ID of{id}");
+                    throw new KeyNotFoundException($"Book ID does not exist with ID of {id}");
                 }
                 else
                 {
@@ -188,18 +188,3 @@ namespace sp_project_guide_api.Service
     }
 
 }
-//return BadRequest();
-
-//var existingBook = await _context.Books.FindAsync(id);
-//if (existingBook == null)
-//{
-//    return; // Handle how you wish to manage not found, maybe throw an exception
-//}
-
-//// Map the updated fields from book to existingBook as necessary
-//existingBook.Title = book.Title;
-//existingBook.Author = book.Author;
-//// Add other fields as necessary
-
-//_context.Entry(existingBook).State = EntityState.Modified;
-//await _context.SaveChangesAsync();
