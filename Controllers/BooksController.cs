@@ -28,12 +28,6 @@ namespace sp_project_guide_api.Controllers
             _bookService = bookService;
         }
 
-        //public BooksController(IBookService bookService)
-        //{
-        //    //_context = context;
-        //    //_config = config;
-        //    _bookService = bookService;
-        //}
 
         [HttpGet]
         public async Task<ActionResult<DTOBook>> GetBooks([FromQuery] int? page, [FromQuery] int? pageSize, [FromQuery] string? sort)

@@ -9,7 +9,6 @@ namespace sp_project_guide_api.Models
         public string Author { get; set; }
         public string ISBN { get; set; }
         public DateTime PubDate { get; set; }
-        //public enum Status { get; set; }
 
         [NotMapped]
         public ICollection<Link>? Links { get; set; }

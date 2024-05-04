@@ -87,7 +87,6 @@ namespace sp_project_guide_api.Service
                     }
                 }
             }
-            throw new KeyNotFoundException("Your book or member ID does not exist.");
         }
 
         private bool OrderExists(int id)

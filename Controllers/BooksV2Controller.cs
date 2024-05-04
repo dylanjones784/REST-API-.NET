@@ -73,25 +73,28 @@ namespace sp_project_guide_api.Controllers
         //Demonstrating a Custom Method, which creates an Order based off a specific JSON body named Oreq.
         //We dont use a PATCH for a custom method. Separate the Custom verb from the Resource via :
         [HttpPost(":createBookOrder")]
-        public async Task<ActionResult<Order>> CreateBookOrder([FromBody]OrderRequest oreq)
+        public async Task<ActionResult<Order>> CreateBookOrder([FromBody]OrderRequest oreq, [FromHeader] int? apiVersion)
         {
-            //check if object is not null 
-            if (oreq != null) {
-                //attempt to find the data they want to create the order with
-                var member = await _context.Members.FindAsync(oreq.MemberId);
-                var book = await _context.Books.FindAsync(oreq.BookId);
-                if(book != null && member != null)
+            if (apiVersion.HasValue && apiVersion == 2)
+            {
+                //check if object is not null 
+                if (oreq != null)
                 {
-                    //if both are not null, then we can make an order
-                    var order = new Order();
-                    //set the values for the new Order
+                    //attempt to find the data they want to create the order with
+                    var member = await _context.Members.FindAsync(oreq.MemberId);
+                    var book = await _context.Books.FindAsync(oreq.BookId);
+                    if (book != null && member != null)
+                    {
+                        //if both are not null, then we can make an order
+                        var order = new Order();
+                        //set the values for the new Order
 
-                    order.MemberID = oreq.MemberId;
-                    order.BookId = oreq.BookId;
-                    _context.Orders.Add(order);
-                    await _context.SaveChangesAsync();
-                    //return order object with hypermedia links
-                    order.Links = new List<Link>
+                        order.MemberID = oreq.MemberId;
+                        order.BookId = oreq.BookId;
+                        _context.Orders.Add(order);
+                        await _context.SaveChangesAsync();
+                        //return order object with hypermedia links
+                        order.Links = new List<Link>
                     {
                         new Link($"/api/Orders/{order.Id}", "self", "GET", 0),
                         new Link($"/api/Orders/{order.Id}", "self", "DELETE",0),
@@ -99,11 +102,14 @@ namespace sp_project_guide_api.Controllers
                         new Link($"/api/Books/{order.MemberID}", "member", "GET",0),
 
                     };
-                    return Ok(order);
-                }else { return NotFound(); }
+                        return Ok(order);
+                    }
+                    else { return NotFound(); }
+                }
             }
-            //if it is null, return bad request
-            return BadRequest(ModelState);
+
+            //if it is null or api version isnt stated, return bad request
+            return BadRequest("Incorrect API Version");
         }
     }
 }

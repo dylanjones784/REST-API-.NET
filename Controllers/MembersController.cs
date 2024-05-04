@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using sp_project_guide_api.Models;
 using sp_project_guide_api.Service;
 
@@ -128,17 +121,6 @@ namespace sp_project_guide_api.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
-        }
-
-
-        public static string SanitiseInput(string i)
-        {
-            Regex r = new Regex("[^a-zA-Z0-9 ]");
-            return r.Replace(i, "");
-        }
-        private bool MemberExists(int id)
-        {
-            return _context.Members.Any(e => e.Id == id);
         }
     }
 }
