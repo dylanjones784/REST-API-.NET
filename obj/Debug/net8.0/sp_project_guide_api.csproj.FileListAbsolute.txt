@@ -358,3 +358,4 @@ C:\Users\dylan\Documents\Projects\sp_project\sp_project_guide_api\sp_project_gui
 C:\Users\dylan\Documents\Projects\sp_project\sp_project_guide_api\sp_project_guide_api\bin\Debug\net8.0\zh-Hant\Microsoft.TestPlatform.CommunicationUtilities.resources.dll
 C:\Users\dylan\Documents\Projects\sp_project\sp_project_guide_api\sp_project_guide_api\bin\Debug\net8.0\zh-Hant\Microsoft.TestPlatform.CrossPlatEngine.resources.dll
 C:\Users\dylan\Documents\Projects\sp_project\sp_project_guide_api\sp_project_guide_api\bin\Debug\net8.0\zh-Hant\Microsoft.VisualStudio.TestPlatform.Common.resources.dll
+C:\Users\dylan\Documents\Projects\sp_project\sp_project_guide_api\sp_project_guide_api\obj\Debug\net8.0\sp_project_guide_api.sourcelink.json

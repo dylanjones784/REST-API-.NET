@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using AspNetCoreRateLimit;
+using sp_project_guide_api.Service;
 
 
 
@@ -54,6 +55,11 @@ builder.Services.Configure<IpRateLimitOptions>(options =>
         }
     };
 });
+
+//Adding services to the build
+builder.Services.AddScoped<IBookService, BookService>();  
+builder.Services.AddScoped<IMemberService, MemberService>(); 
+builder.Services.AddScoped<IOrderService, OrderService>(); 
 
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
 builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
